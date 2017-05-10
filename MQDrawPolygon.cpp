@@ -19,12 +19,14 @@ BOOL DrawPolygon(MQDocument doc);
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
 #include <CGAL/Optimal_transportation_reconstruction_2.h>
-
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Constrained_Delaunay_triangulation_2.h>
 
 //#include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
-typedef CGAL::Simple_cartesian<double> K;
+//typedef CGAL::Simple_cartesian<double> K;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 
 typedef K::FT FT;
 typedef K::Ray_3 Ray;
@@ -48,6 +50,10 @@ typedef CGAL::First_of_pair_property_map <PointMassPair> Point_property_map;
 typedef CGAL::Second_of_pair_property_map <PointMassPair> Mass_property_map;
 typedef CGAL::Optimal_transportation_reconstruction_2<K, Point_property_map, Mass_property_map> Otr_2;
 typedef CGAL::Optimal_transportation_reconstruction_2<K> Otr;
+
+
+typedef CGAL::Exact_predicates_tag Itag;
+typedef CGAL::Constrained_Delaunay_triangulation_2<K, CGAL::Default, Itag> CDT;
 
 
 //---------------------------------------------------------------------------
@@ -128,7 +134,13 @@ public:
   DrawPolygonDialog(MQWindowBase& parent);
   ~DrawPolygonDialog();
 
-  BOOL ComboChanged(MQWidgetBase *sender, MQDocument doc)
+  BOOL edgeprocChanged(MQWidgetBase *sender, MQDocument doc)
+  {
+    slider_thresholdMennuki->SetEnabled( combo_edgeproc->GetCurrentIndex()==3 ? false:true);
+    return FALSE;
+  }
+
+  BOOL vectorconvChanged(MQWidgetBase *sender, MQDocument doc)
   {
     slider_threshold->SetEnabled( combo_vectorconv->GetCurrentIndex()==0 ? false:true);
     return FALSE;
@@ -138,6 +150,8 @@ public:
   MQComboBox *combo_vectorconv;
   MQSlider *slider_threshold;
   MQSpinBox *spin_np;
+  MQCheckBox *check_facegen;
+  MQSlider *slider_thresholdMennuki;
 };
 
 DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
@@ -156,13 +170,14 @@ DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
   combo_edgeproc->AddItem(L"Sobel");
   combo_edgeproc->AddItem(L"無し（中央線）");
   combo_edgeproc->SetCurrentIndex(0);
+  combo_edgeproc->AddChangedEvent(this, &DrawPolygonDialog::edgeprocChanged);
   
   CreateLabel(paramFrame, L"ベクトル化");
   combo_vectorconv = CreateComboBox(paramFrame);
   combo_vectorconv->AddItem(L"モノクロ値を重みとして使用");
   combo_vectorconv->AddItem(L"2値化（重み無し））");
   combo_vectorconv->SetCurrentIndex(0);
-  combo_vectorconv->AddChangedEvent(this, &DrawPolygonDialog::ComboChanged);
+  combo_vectorconv->AddChangedEvent(this, &DrawPolygonDialog::vectorconvChanged);
   
   CreateLabel(paramFrame, L"2値化の判定値");
   slider_threshold = CreateSlider(paramFrame);
@@ -176,6 +191,18 @@ DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
   spin_np->SetMin(2);
   spin_np->SetMax(1000);
   spin_np->SetPosition(100);
+
+  CreateLabel(paramFrame, L"面を生成");
+  check_facegen = CreateCheckBox(paramFrame);
+  check_facegen->SetChecked(true);
+  
+  
+  CreateLabel(paramFrame, L"面抜き判定値 (多く残る→)");
+  slider_thresholdMennuki = CreateSlider(paramFrame);
+  slider_thresholdMennuki->SetMin(0.01);
+  slider_thresholdMennuki->SetMax(0.99);
+  slider_thresholdMennuki->SetPosition(0.5);
+  slider_thresholdMennuki->SetEnabled(true);
 
   MQFrame *sideFrame = CreateVerticalFrame(mainFrame);
 
@@ -222,6 +249,7 @@ BOOL GetClipboardBitmap(cv::Mat &mat)
   HBITMAP hBitmapOld = dc.SelectBitmap(hBitmap);
   mat.create(bmp.bmHeight, bmp.bmWidth, CV_8UC4);
   GetDIBits(dc, hBitmap, 0, bmp.bmHeight, mat.data, &bi, DIB_RGB_COLORS);
+  cv::flip(mat, mat, 0);
   
   dc.SelectBitmap(hBitmapOld);
   ::CloseClipboard();
@@ -256,6 +284,7 @@ void Edge(int edgeproc, cv::Mat &src, cv::Mat &srcf, cv::Mat &dst)
   }
 }
 
+
 void ToPolygonMass(cv::Mat &src, PointMassList& points)
 {
   int w = src.cols, h = src.rows;
@@ -281,6 +310,25 @@ void ToPolygonMass(cv::Mat &src, PointMassList& points)
     }
   }
 }
+
+void CheckFaceThreshold(int threshold, cv::Mat &chkFace, cv::Mat &srcGray)
+{
+  int w = srcGray.cols, h = srcGray.rows;
+
+  unsigned char *pChk = chkFace.data;
+  unsigned char *pGray = srcGray.data;
+  
+  for(int y = 0;y<h;y++)
+  {
+    for(int x=0;x<w;x++)
+    {
+      *pChk = (*pGray>=threshold) ? 255:0;
+      pChk++;
+      pGray++;
+    }
+  }
+}
+
 void ToPolygonThreshold(cv::Mat &src, std::vector<Point2>& points, float threshold)
 {
   int w = src.cols, h = src.rows;
@@ -299,15 +347,73 @@ void ToPolygonThreshold(cv::Mat &src, std::vector<Point2>& points, float thresho
       float v = *p;
       if(v>=threshold)
       {
-        //float x2 = x;
-        //x2 = (x2 / wf) * 100.0f;
-        //float y2 = y;
-        //y2 = (1.0f - (y2 / hf)) * 100.0f;
         pt = Point2(x, y);
         points.push_back(pt);
       }
       p++;
     }
+  }
+}
+
+bool isDrawFace(Point2 &p, Point2 &p2, Point2 &p3, cv::Mat &chkFace, int thresholdMennuki)
+{
+  cv::Mat mask = cv::Mat::zeros(chkFace.rows, chkFace.cols, CV_8U);
+  std::vector<cv::Point> points;
+  points.push_back(cv::Point(p.x(), p.y()));
+  points.push_back(cv::Point(p2.x(), p2.y()));
+  points.push_back(cv::Point(p3.x(), p3.y()));
+  cv::fillConvexPoly(mask, points, cv::Scalar(255));
+  unsigned char v = cv::mean(chkFace, mask)[0];
+  int nonzero = cv::countNonZero(mask);
+  
+  char b[151];
+  sprintf(b, "v = %d\n", v);
+  OutputDebugStringA(b);
+  
+  return (v<thresholdMennuki && nonzero!=0) ? true:false;
+}
+
+void OutputToMetaseq_LineTri(MQObject o, std::vector<Segment2> &otr2_line, std::vector<Point2> &otr2_v, cv::Mat &chkFace, bool bOutputAllFace, int thresholdMennuki)
+{
+  CDT cdt;
+  cdt.insert(otr2_v.begin(), otr2_v.end());
+  int lnum = otr2_line.size();
+  for(int i=0;i<lnum;i++)
+  {
+    Segment2 *l = &(otr2_line[i]);
+    cdt.insert_constraint(l->source(), l->target());
+  }
+  for (CDT::Finite_faces_iterator fit=cdt.finite_faces_begin(); fit!=cdt.finite_faces_end(); fit++)
+  {
+    int idx[3];
+    CDT::Face_handle face = fit;
+    Point2 &p = face->vertex(0)->point();
+    Point2 &p2 = face->vertex(2)->point();
+    Point2 &p3 = face->vertex(1)->point();
+    idx[0] = o->AddVertex(MQPoint(p.x(), p.y(), 0.0));
+    idx[1] = o->AddVertex(MQPoint(p2.x(), p2.y(), 0.0));
+    idx[2] = o->AddVertex(MQPoint(p3.x(), p3.y(), 0.0));
+    
+    bool bFace;
+    if(!bOutputAllFace)bFace = isDrawFace(p, p2, p3, chkFace, thresholdMennuki);
+    if(bOutputAllFace || bFace)o->AddFace(3, idx);
+  }
+}
+
+void OutputToMetaseq_LineOnly(MQObject o, std::vector<Segment2> &otr2_line)
+{
+  int lnum = otr2_line.size();
+  for(int i=0;i<lnum;i++)
+  {
+    Segment2 *l = &(otr2_line[i]);
+    int idx[2];
+    float x2 = l->source().x();
+    float y2 = l->source().y();
+    idx[0] = o->AddVertex(MQPoint(x2, y2, 0.0));
+    x2 = l->target().x();
+    y2 = l->target().y();
+    idx[1] = o->AddVertex(MQPoint(x2, y2, 0.0));
+    o->AddFace(2, idx);
   }
 }
 
@@ -323,6 +429,8 @@ BOOL DrawPolygon(MQDocument doc)
   int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
   double threshold = dlg.slider_threshold->GetPosition();
   int np = dlg.spin_np->GetPosition();
+  bool bFacegen = dlg.check_facegen->GetChecked();
+  int thresholdMennuki = dlg.slider_thresholdMennuki->GetPosition() * 255.0;
   
   
   cv::Mat mat;
@@ -341,11 +449,16 @@ BOOL DrawPolygon(MQDocument doc)
   Mass_property_map  mass_pmap;
   PointMassList pointsMass;
   std::vector<Point2> points;
+  cv::Mat chkFace(dstEdge.rows, dstEdge.cols, CV_8U, cv::Scalar(255));
+  cv::Mat srcGray;
+  cvtColor(mat, srcGray, CV_RGB2GRAY);
 
   switch(vectorconv)
   {
-  case 0:
+  case 0://モノクロ値を重みとして使用
     {
+    if(edgeproc==3)chkFace = srcGray;
+    else CheckFaceThreshold(254, chkFace, srcGray);
     ToPolygonMass(dstEdge, pointsMass);
     if(pointsMass.size()==0)return FALSE;
     Otr_2 otr2(pointsMass, point_pmap, mass_pmap);
@@ -353,8 +466,9 @@ BOOL DrawPolygon(MQDocument doc)
     otr2.list_output(std::back_inserter(otr2_v), std::back_inserter(otr2_line));
     }
     break;
-  case 1:
+  case 1://２値化
     {
+    CheckFaceThreshold(threshold*255.0, chkFace, srcGray);
     ToPolygonThreshold(dstEdge, points, threshold);
     if(points.size()==0)return FALSE;
     Otr otr(points);
@@ -373,25 +487,11 @@ BOOL DrawPolygon(MQDocument doc)
   doc->GetUnusedObjectName(objname, 150, "draw");
   o->SetName(objname);
 
-  float wf = dstEdge.cols, hf = dstEdge.rows;
-
-  int lnum = otr2_line.size();
-  for(int i=0;i<lnum;i++)
-  {
-    Segment2 *l = &(otr2_line[i]);
-    int idx[2];
-    float x2 = l->source().x();
-    //x2 = x2;
-    float y2 = l->source().y();
-    y2 = hf - y2;
-    idx[0] = o->AddVertex(MQPoint(x2, y2, 0.0));
-    x2 = l->target().x();
-    //x2 = (x2 / wf) * 100.0f;
-    y2 = l->target().y();
-    y2 = hf - y2;
-    idx[1] = o->AddVertex(MQPoint(x2, y2, 0.0));
-    o->AddFace(2, idx);
-  }
+  //float wf = dstEdge.cols, hf = dstEdge.rows;
+  
+  
+  if(bFacegen)OutputToMetaseq_LineTri(o, otr2_line, otr2_v, chkFace, edgeproc==3, thresholdMennuki);
+  else        OutputToMetaseq_LineOnly(o, otr2_line);
 
   o->OptimizeVertex(0.0f, NULL);
   doc->AddObject(o);
