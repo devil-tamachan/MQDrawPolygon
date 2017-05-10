@@ -1,13 +1,17 @@
 # MQDrawPolygon
 ラスター画像をポリゴン化。メタセコイア４用プラグイン
 
+## 更新履歴
+ - v1.1 (20170510): 面貼り追加
+
 ## ダウンロード
- - https://github.com/devil-tamachan/MQDrawPolygon/releases
- - 32ビット版は今のところありません。自分でビルドしてください
+ - 64ビット版: https://github.com/devil-tamachan/MQDrawPolygon/releases
+ - 32ビット版: 今のところありません。自分でビルドしてください
 
 ## インストール方法
- - MQDrawPolygon.dll, CGAL-vc100-mt-4.9.1.dl_ の２ファイルを　Metasequoia4_x64\Plugins\Select　フォルダへコピー、貼り付け
+ - MQDrawPolygon.dll, CGAL-vc100-mt-4.9.1.dl_, libgmp-10.dl_ の３ファイルを　Metasequoia4_x64\Plugins\Select　フォルダへコピー、貼り付け
  - MQShrinkWrapを使っている場合、CGAL-vc100-mt-4.9.1.dl_ はスキップか上書きしてください
+ - v1.1でlibgmp-10.dl_が追加されました。忘れずにコピー
 
 ## 使い方
  - SAI/AzPainter2/IrfanViewなどで画像を開く、または描く
@@ -24,5 +28,6 @@
  - 出力頂点数はできるだけ少なくしてください。カクカクしていたら徐々に増やしてみてください
 
 ## 変換サンプル
+<img src="https://github.com/devil-tamachan/MQDrawPolygon/raw/master/sample/ribbon_result.png" />
 <img src="https://github.com/devil-tamachan/MQDrawPolygon/raw/master/sample/color1_result.png" />
 <img src="https://github.com/devil-tamachan/MQDrawPolygon/raw/master/sample/centerline1_result.png" />
