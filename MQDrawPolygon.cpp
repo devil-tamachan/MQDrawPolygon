@@ -1,18 +1,28 @@
 
 
+#if defined _WIN32 || defined __CYGWIN__
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#endif
 #include <stdio.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <vector>
 #include <float.h>
 
+#include <boost/filesystem.hpp>
+
+
+#if defined _WIN32 || defined __CYGWIN__
 #include <minmax.h>
+#endif
 #include "MQPlugin.h"
 #include "MQWidget.h"
 
-//MQSDKÇÃÉoÅ[ÉWÉáÉìÇ…ÇÊÇ¡ÇƒGetObject(atlgdi.hÇ»Ç«)Ç™égÇ¶Ç»Ç≠Ç»ÇÈ
+#include "My3DStruct.h"
+
+#if defined _WIN32 || defined __CYGWIN__
+//MQSDK„ÅÆ„Éê„Éº„Ç∏„Éß„É≥„Å´„Çà„Å£„Å¶GetObject(atlgdi.h„Å™„Å©)„Åå‰Ωø„Åà„Å™„Åè„Å™„Çã
 //http://www.metaseq.net/bbs/metaseq/bbs.php?lang=jp&res=7044
 #if MQPLUGIN_VERSION >= 0x0459
 #ifndef GetObject
@@ -29,6 +39,7 @@ inline int GetObject(HGDIOBJ p1, int p2, LPVOID p3)
 #include <atlbase.h>
 #include <atlapp.h>
 #include <atlmisc.h>
+#endif
 
 BOOL DrawPolygon(MQDocument doc);
 
@@ -36,19 +47,6 @@ BOOL DrawPolygon(MQDocument doc);
 #include <iostream>
 #include <list>
 
-#define CGAL_INTERSECTION_VERSION 2
-
-
-#include <CGAL/Simple_cartesian.h>
-#include <CGAL/AABB_tree.h>
-#include <CGAL/AABB_traits.h>
-#include <CGAL/AABB_triangle_primitive.h>
-#include <CGAL/Optimal_transportation_reconstruction_2.h>
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
-#include <CGAL/Constrained_Delaunay_triangulation_2.h>
-#include <CGAL/Barycentric_coordinates_2/Triangle_coordinates_2.h>
-#include <CGAL/Boolean_set_operations_2.h>
-#include <CGAL/Polygon_with_holes_2.h>
 
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -65,77 +63,10 @@ void MyOutputDebugStringA(const char *s) { OutputDebugStringA(s); }
 void MyOutputDebugStringA(const char *s) { }
 #endif
 
-typedef CGAL::Simple_cartesian<double> K;
-typedef CGAL::Simple_cartesian<double> K2;
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel K; //CGAL::intersectionÇ≈Access ViolationÇ™Ç®Ç´ÇÈ https://stackoverflow.com/questions/32951886/wrong-inexact-intersection-between-3d-triangles-cgal   í«ãL: intersectionÇ÷ÇÃì¸óÕÉ|ÉäÉSÉìÇ™ïsê≥ÇæÇ¡ÇΩâ¬î\ê´ëÂÅBâÒì]ï˚å¸Ç∆area0Ç…ãCÇÇ¬ÇØÇÈïKóvÇ†ÇËÅBis_simpleÅA include/CGAL/Boolean_set_operations_2/Gps_polygon_validation.hÇ»Ç«éQè∆
-//typedef CGAL::Exact_predicates_exact_constructions_kernel K2; //Optimal_transportation_reconstruction_2Ç∆ÇÒÇ≈Ç‡Ç»Ç≠íxÇ¢ÅBñ≥å¿ÉãÅ[ÉvÇ»ÇÃÇ©îªífÇ≈Ç´Ç»Ç¢ÇŸÇ«íxÇ¢
-//typedef CGAL::Exact_predicates_inexact_constructions_kernel K2;
 
-typedef K::FT FT;
-typedef K::Ray_3 Ray;
-typedef K::Line_3 Line;
-typedef K::Point_3 Point3;
-typedef K::Point_2 Point2;
-typedef K::Triangle_2 Triangle2;
-typedef K::Iso_rectangle_2 Iso_rectangle2;
-typedef K::Triangle_3 Triangle3;
-typedef K::Direction_3 Direction;
-typedef K::Vector_2 Vector2;
-typedef K::Vector_3 Vector3;
-typedef K::Segment_2 Segment2;
-typedef CGAL::Polygon_2<K> Polygon2;
-
-typedef CGAL::Aff_transformation_3<K> transform3; //Point3à»äO(Vector3Ç»Ç«)ÇÕà⁄ìÆê¨ï™ñ≥éãÇ≥ÇÍÇÈÇÃÇ≈íçà”
-
-typedef std::list<Triangle3>::iterator Iterator;
-typedef CGAL::AABB_triangle_primitive<K, Iterator> Primitive;
-typedef CGAL::AABB_traits<K, Primitive> AABB_triangle_traits;
-typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
-typedef boost::optional<Tree::Intersection_and_primitive_id<Ray>::Type> Ray_intersection;
-
-typedef std::pair<Point2, FT> PointMassPair;
-typedef std::vector<PointMassPair> PointMassList;
-typedef CGAL::First_of_pair_property_map <PointMassPair> Point_property_map;
-typedef CGAL::Second_of_pair_property_map <PointMassPair> Mass_property_map;
-typedef CGAL::Optimal_transportation_reconstruction_2<K, Point_property_map, Mass_property_map> Otr_2;
-typedef CGAL::Optimal_transportation_reconstruction_2<K> Otr;
-
-
-typedef CGAL::Exact_predicates_tag Itag;
-typedef CGAL::Constrained_Delaunay_triangulation_2<K, CGAL::Default, Itag> CDT;
-
-
-typedef CGAL::Barycentric_coordinates::Triangle_coordinates_2<K> Triangle_coordinates;
-
-//typedef K2::Triangle_2 Triangle2_K2;
-typedef CGAL::Polygon_2<K2> Polygon2_K2;
-typedef CGAL::Polygon_with_holes_2<K2> Polygon_with_holes_2;
-typedef std::list<Polygon_with_holes_2> Pwh_list_2;
-typedef K2::Point_2 Point2_K2;
-
-
-
-
-  cv::Point2f point2ToCvPoint2f(Point2 &p)
-  {
-    double x = CGAL::to_double(p.x());
-    double y = CGAL::to_double(p.y());
-    return cv::Point2f(x, y);
-  }
-  cv::Point point2ToCvPoint(Point2 &p)
-  {
-    double x = CGAL::to_double(p.x());
-    double y = CGAL::to_double(p.y());
-    return cv::Point(x, y);
-  }
-  cv::Point point2_K2ToCvPoint(Point2_K2 &p)
-  {
-    double x = CGAL::to_double(p.x());
-    double y = CGAL::to_double(p.y());
-    return cv::Point(x, y);
-  }
 
 #ifdef MYOUTPUTDEBUG
+/*
 void OutputDebugStringVector3(Vector3 v)
 {
   char buf[1025];
@@ -148,6 +79,7 @@ void OutputDebugStringVector2(Vector2 v)
   sprintf(buf, "Vector2: %f, %f\n", float(CGAL::to_double(v.x())), float(CGAL::to_double(v.y())));
   OutputDebugStringA(buf);
 }
+*/
 void OutputDebugCVSize(cv::Size s)
 {
   char buf[1025];
@@ -155,14 +87,14 @@ void OutputDebugCVSize(cv::Size s)
   OutputDebugStringA(buf);
 }
 #else
-inline void OutputDebugStringVector3(Vector3 v) {}
-inline void OutputDebugStringVector2(Vector2 v) {}
+//inline void OutputDebugStringVector3(Vector3 v) {}
+//inline void OutputDebugStringVector2(Vector2 v) {}
 inline void OutputDebugCVSize(cv::Size s) {}
 #endif
 
 
 #include "DrawPolygonDlg.h"
-#include "Raster2Vector.h"
+//#include "Raster2Vector.h"
 #include "MQTexManager.h"
 
 //---------------------------------------------------------------------------
@@ -173,49 +105,49 @@ BOOL APIENTRY DllMain( HANDLE hModule,
                        LPVOID lpReserved
 					 )
 {
-	//ÉvÉâÉOÉCÉìÇ∆ÇµÇƒÇÕì¡Ç…ïKóvÇ»èàóùÇÕÇ»Ç¢ÇÃÇ≈ÅAâΩÇ‡ÇπÇ∏Ç…TRUEÇï‘Ç∑
+	//„Éó„É©„Ç∞„Ç§„É≥„Å®„Åó„Å¶„ÅØÁâπ„Å´ÂøÖË¶Å„Å™Âá¶ÁêÜ„ÅØ„Å™„ÅÑ„ÅÆ„Åß„ÄÅ‰Ωï„ÇÇ„Åõ„Åö„Å´TRUE„ÇíËøî„Åô
     return TRUE;
 }
 
 //---------------------------------------------------------------------------
 //  MQGetPlugInID
-//    ÉvÉâÉOÉCÉìIDÇï‘Ç∑ÅB
-//    Ç±ÇÃä÷êîÇÕãNìÆéûÇ…åƒÇ—èoÇ≥ÇÍÇÈÅB
+//    „Éó„É©„Ç∞„Ç§„É≥ID„ÇíËøî„Åô„ÄÇ
+//    „Åì„ÅÆÈñ¢Êï∞„ÅØËµ∑ÂãïÊôÇ„Å´Âëº„Å≥Âá∫„Åï„Çå„Çã„ÄÇ
 //---------------------------------------------------------------------------
 MQPLUGIN_EXPORT void MQGetPlugInID(DWORD *Product, DWORD *ID)
 {
-	// ÉvÉçÉ_ÉNÉgñº(êßçÏé“ñº)Ç∆IDÇÅAëSïîÇ≈64bitÇÃílÇ∆ÇµÇƒï‘Ç∑
-	// ílÇÕëºÇ∆èdï°ÇµÇ»Ç¢ÇÊÇ§Ç»ÉâÉìÉ_ÉÄÇ»Ç‡ÇÃÇ≈ó«Ç¢
+	// „Éó„É≠„ÉÄ„ÇØ„ÉàÂêç(Âà∂‰ΩúËÄÖÂêç)„Å®ID„Çí„ÄÅÂÖ®ÈÉ®„Åß64bit„ÅÆÂÄ§„Å®„Åó„Å¶Ëøî„Åô
+	// ÂÄ§„ÅØ‰ªñ„Å®ÈáçË§á„Åó„Å™„ÅÑ„Çà„ÅÜ„Å™„É©„É≥„ÉÄ„É†„Å™„ÇÇ„ÅÆ„ÅßËâØ„ÅÑ
 	*Product = 0xA8BEE201;
 	*ID      = 0xCD9DA490;
 }
 
 //---------------------------------------------------------------------------
 //  MQGetPlugInName
-//    ÉvÉâÉOÉCÉìñºÇï‘Ç∑ÅB
-//    Ç±ÇÃä÷êîÇÕ[ÉvÉâÉOÉCÉìÇ…Ç¬Ç¢Çƒ]ï\é¶éûÇ…åƒÇ—èoÇ≥ÇÍÇÈÅB
+//    „Éó„É©„Ç∞„Ç§„É≥Âêç„ÇíËøî„Åô„ÄÇ
+//    „Åì„ÅÆÈñ¢Êï∞„ÅØ[„Éó„É©„Ç∞„Ç§„É≥„Å´„Å§„ÅÑ„Å¶]Ë°®Á§∫ÊôÇ„Å´Âëº„Å≥Âá∫„Åï„Çå„Çã„ÄÇ
 //---------------------------------------------------------------------------
 MQPLUGIN_EXPORT const char *MQGetPlugInName(void)
 {
-	// ÉvÉâÉOÉCÉìñº
+	// „Éó„É©„Ç∞„Ç§„É≥Âêç
 	return "MQDrawPolygon           Copyright(C) 2017, tamachan";
 }
 
 //---------------------------------------------------------------------------
 //  MQGetPlugInType
-//    ÉvÉâÉOÉCÉìÇÃÉ^ÉCÉvÇï‘Ç∑ÅB
-//    Ç±ÇÃä÷êîÇÕãNìÆéûÇ…åƒÇ—èoÇ≥ÇÍÇÈÅB
+//    „Éó„É©„Ç∞„Ç§„É≥„ÅÆ„Çø„Ç§„Éó„ÇíËøî„Åô„ÄÇ
+//    „Åì„ÅÆÈñ¢Êï∞„ÅØËµ∑ÂãïÊôÇ„Å´Âëº„Å≥Âá∫„Åï„Çå„Çã„ÄÇ
 //---------------------------------------------------------------------------
 MQPLUGIN_EXPORT int MQGetPlugInType(void)
 {
-	// ëIëïîïœå`ópÉvÉâÉOÉCÉìÇ≈Ç†ÇÈ
+	// ÈÅ∏ÊäûÈÉ®Â§âÂΩ¢Áî®„Éó„É©„Ç∞„Ç§„É≥„Åß„ÅÇ„Çã
 	return MQPLUGIN_TYPE_SELECT;
 }
 
 //---------------------------------------------------------------------------
 //  MQEnumString
-//    É|ÉbÉvÉAÉbÉvÉÅÉjÉÖÅ[Ç…ï\é¶Ç≥ÇÍÇÈï∂éöóÒÇï‘Ç∑ÅB
-//    Ç±ÇÃä÷êîÇÕãNìÆéûÇ…åƒÇ—èoÇ≥ÇÍÇÈÅB
+//    „Éù„ÉÉ„Éó„Ç¢„ÉÉ„Éó„É°„Éã„É•„Éº„Å´Ë°®Á§∫„Åï„Çå„ÇãÊñáÂ≠óÂàó„ÇíËøî„Åô„ÄÇ
+//    „Åì„ÅÆÈñ¢Êï∞„ÅØËµ∑ÂãïÊôÇ„Å´Âëº„Å≥Âá∫„Åï„Çå„Çã„ÄÇ
 //---------------------------------------------------------------------------
 MQPLUGIN_EXPORT const char *MQEnumString(int index)
 {
@@ -227,7 +159,7 @@ MQPLUGIN_EXPORT const char *MQEnumString(int index)
 
 //---------------------------------------------------------------------------
 //  MQModifySelect
-//    ÉÅÉjÉÖÅ[Ç©ÇÁëIëÇ≥ÇÍÇΩÇ∆Ç´Ç…åƒÇ—èoÇ≥ÇÍÇÈÅB
+//    „É°„Éã„É•„Éº„Åã„ÇâÈÅ∏Êäû„Åï„Çå„Åü„Å®„Åç„Å´Âëº„Å≥Âá∫„Åï„Çå„Çã„ÄÇ
 //---------------------------------------------------------------------------
 MQPLUGIN_EXPORT BOOL MQModifySelect(int index, MQDocument doc)
 {
@@ -238,39 +170,194 @@ MQPLUGIN_EXPORT BOOL MQModifySelect(int index, MQDocument doc)
 }
 
 
-BOOL GetClipboardBitmap(cv::Mat &mat)
+
+bool GetDllDirA(char *path, int size)
 {
-  if(!::OpenClipboard(NULL))return FALSE;
-  HBITMAP hBitmap = (HBITMAP)::GetClipboardData(CF_BITMAP);
-  BITMAP bmp;
-  if(hBitmap==NULL || !GetObject(hBitmap, sizeof(BITMAP), &bmp))
-  {
-    ::CloseClipboard();
-    return FALSE;
-  }
-  BITMAPINFO bi = {0};
-  BITMAPINFOHEADER *bh = &(bi.bmiHeader);
-  bh->biSize = sizeof(BITMAPINFOHEADER);
-  bh->biWidth = bmp.bmWidth;
-  bh->biHeight = -bmp.bmHeight;
-  bh->biPlanes = 1;
-  bh->biBitCount = 32;
-  bh->biCompression = BI_RGB;
-  
-  CDC dc;
-  dc.CreateCompatibleDC();
-  HBITMAP hBitmapOld = dc.SelectBitmap(hBitmap);
-  mat.create(bmp.bmHeight, bmp.bmWidth, CV_8UC4);
-  GetDIBits(dc, hBitmap, 0, bmp.bmHeight, mat.data, &bi, DIB_RGB_COLORS);
-  cv::flip(mat, mat, 0);
-  
-  dc.SelectBitmap(hBitmapOld);
-  ::CloseClipboard();
-  
-  return TRUE;
+  //char path[_MAX_PATH+16];
+  HMODULE hModule = NULL;
+  if(!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,  (LPTSTR)&GetDllDirA, &hModule))return false;
+  if(!GetModuleFileNameA(hModule, path, size))return false;
+  PathRemoveFileSpecA(path);
+  return true;
+}
+bool GetDllDirW(wchar_t *path, int size)
+{
+  //char path[_MAX_PATH+16];
+  HMODULE hModule = NULL;
+  if(!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,  (LPTSTR)&GetDllDirW, &hModule))return false;
+  if(!GetModuleFileNameW(hModule, path, size))return false;
+  PathRemoveFileSpecW(path);
+  return true;
 }
 
-BOOL ConvertFromClipboard(MQDocument doc, DrawPolygonDialog &dlg)
+std::string GetDrawPolygonPathA()
+{
+  char path[_MAX_PATH+16];
+  path[0] = NULL;
+  bool bRet = GetDllDirA(path, _MAX_PATH);
+  if(!bRet)return "DrawPolygon.exe";
+  std::string ret = path;
+  return ret+"\\DrawPolygon.exe";
+}
+
+std::wstring GetDrawPolygonPathW()
+{
+  wchar_t path[_MAX_PATH+16];
+  path[0] = NULL;
+  bool bRet = GetDllDirW(path, _MAX_PATH);
+  if(!bRet)return L"DrawPolygon.exe";
+  std::wstring ret = path;
+  return ret+L"\\DrawPolygon.exe";
+}
+
+std::string MyGetTempFilePathA()
+{
+  boost::filesystem::path path = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();
+  return path.string();
+}
+
+std::wstring MyGetTempFilePathW()
+{
+  boost::filesystem::path path = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();
+  return path.native();
+}
+
+MQPoint MyPointToMQPoint(MyPoint p)
+{
+  return MQPoint(p.x, p.y, p.z);
+}
+
+MQCoordinate MyCoordinateToMQCoordinate(MyCoordinate &_coord)
+{
+  return MQCoordinate(_coord.u, _coord.v);
+}
+
+void MyCoordinateToMQCoordinate(std::vector<MyCoordinate> &_coords, std::vector<MQCoordinate> &coords)
+{
+  int num = _coords.size();
+  for(int i=0;i<num;i++)
+  {
+    coords.push_back(MyCoordinateToMQCoordinate(_coords[i]));
+  }
+}
+
+void MyObjectToMQObject(MyObject o, MQObject mqoOut)
+{
+  int numF = o->GetFaceCount();
+  for(int fi=0;fi<numF;fi++)
+  {
+    int numFV = o->GetFacePointCount(fi);
+    if(numFV<3)continue;
+    
+    std::vector<MyPoint> vp;
+    o->GetFaceMyPointArray(fi, vp);
+    std::vector<int> vidx;
+    for(int mpi=0;mpi<numFV;mpi++)
+    {
+      vidx.push_back(mqoOut->AddVertex(MyPointToMQPoint(vp[mpi])));
+    }
+    
+    int newFaceIdx = mqoOut->AddFace(numFV, &(*vidx.begin()));
+    int matId = o->GetFaceMaterial(fi);
+    if(matId>=0)mqoOut->SetFaceMaterial(fi, matId);
+    
+    std::vector<MyCoordinate> _coords;
+    o->GetFaceCoordinateArray(fi, _coords);
+    std::vector<MQCoordinate> coords;
+    MyCoordinateToMQCoordinate(_coords, coords);
+    mqoOut->SetFaceCoordinateArray(fi, &(*coords.begin()));
+  }
+}
+
+bool loadPoly(MQObject mqoOut, const char *path)
+{
+  _MyObject o;
+  bool bRet = o.read(path);
+  if(!bRet)return false;
+  MyObjectToMQObject(&o, mqoOut);
+  return true;
+}
+bool loadPoly(MQObject mqoOut, const wchar_t *path)
+{
+  _MyObject o;
+  bool bRet = o.read(path);
+  if(!bRet)return false;
+  MyObjectToMQObject(&o, mqoOut);
+  return true;
+}
+
+DWORD RunCmdA(std::string &cmd)
+{
+  STARTUPINFOA si = {0};
+  si.cb = sizeof(si);
+  PROCESS_INFORMATION pi = {0};
+  
+  if(!CreateProcessA(NULL, &cmd[0], NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+  {
+    return -1;
+  }
+
+  DWORD result=-1;
+  WaitForSingleObject(pi.hProcess, INFINITE);
+  GetExitCodeProcess(pi.hProcess, &result);
+
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+  return result;
+}
+
+DWORD RunCmdW(std::wstring &cmd)
+{
+  STARTUPINFOW si = {0};
+  si.cb = sizeof(si);
+  PROCESS_INFORMATION pi = {0};
+  
+  if(!CreateProcessW(NULL, &cmd[0], NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+  {
+    return false;
+  }
+
+  DWORD result=-1;
+  WaitForSingleObject(pi.hProcess, INFINITE);
+  GetExitCodeProcess(pi.hProcess, &result);
+
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+  return result;
+}
+
+std::string GetOptStrA(DrawPolygonDialog &dlg)
+{
+  int modeZScale = dlg.combo_zscale->GetCurrentIndex();
+  double zscale = dlg.dblspin_zscale->GetPosition();
+  int edgeproc = dlg.combo_edgeproc->GetCurrentIndex();
+  int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
+  double threshold = dlg.slider_threshold->GetPosition();
+  int np = dlg.spin_np->GetPosition();
+  bool bFacegen = dlg.check_facegen->GetChecked();
+  bool bThresholdMennuki = dlg.check_thresholdMennuki->GetChecked();
+  double thresholdMennuki = dlg.slider_thresholdMennuki->GetPosition();
+  bool bOptimize = dlg.check_optimize->GetChecked();
+  return " -a "+std::to_string((long long)modeZScale)+" -z "+std::to_string((long double)zscale)+" -e "+std::to_string((long long)edgeproc)+" -v "+std::to_string((long long)vectorconv)+" -b "+std::to_string((long double)threshold)+" -n "+std::to_string((long long)np)+(bFacegen?" -g":"")+(bThresholdMennuki?" -h":"")+" -c "+std::to_string((long double)thresholdMennuki)+(bOptimize?" -p":"")+" ";
+}
+
+std::wstring GetOptStrW(DrawPolygonDialog &dlg)
+{
+  int modeZScale = dlg.combo_zscale->GetCurrentIndex();
+  double zscale = dlg.dblspin_zscale->GetPosition();
+  int edgeproc = dlg.combo_edgeproc->GetCurrentIndex();
+  int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
+  double threshold = dlg.slider_threshold->GetPosition();
+  int np = dlg.spin_np->GetPosition();
+  bool bFacegen = dlg.check_facegen->GetChecked();
+  bool bThresholdMennuki = dlg.check_thresholdMennuki->GetChecked();
+  double thresholdMennuki = dlg.slider_thresholdMennuki->GetPosition();
+  bool bOptimize = dlg.check_optimize->GetChecked();
+  return L" -a "+std::to_wstring((long long)modeZScale)+L" -z "+std::to_wstring((long double)zscale)+L" -e "+std::to_wstring((long long)edgeproc)+L" -v "+std::to_wstring((long long)vectorconv)+L" -b "+std::to_wstring((long double)threshold)+L" -n "+std::to_wstring((long long)np)+(bFacegen?L" -g":L"")+(bThresholdMennuki?L" -h":L"")+L" -c "+std::to_wstring((long double)thresholdMennuki)+(bOptimize?L" -p":L"")+L" ";
+}
+
+
+bool ConvertFromClipboard(MQDocument doc, DrawPolygonDialog &dlg)
 {
   int edgeproc = dlg.combo_edgeproc->GetCurrentIndex();
   //int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
@@ -281,383 +368,163 @@ BOOL ConvertFromClipboard(MQDocument doc, DrawPolygonDialog &dlg)
   bool bOptimize = dlg.check_optimize->GetChecked();
   bool bThresholdMennuki = dlg.check_thresholdMennuki->GetChecked();
   
-  
-  cv::Mat mat;
-  if(GetClipboardBitmap(mat)==FALSE)return FALSE;
-  
-  CRaster2Vector conv(dlg);
-  
-  if(conv.Raster2Vector(mat)==FALSE)return FALSE;
-
-  //printf("type = %d, depth = %d, channels = %d\n", dstEdge.type(), dstEdge.depth(), dstEdge.channels());
-
   MQObject o = MQ_CreateObject();
   char objname[151];
   doc->GetUnusedObjectName(objname, 150, "draw");
   o->SetName(objname);
-
-  double wf = mat.cols, hf = mat.rows;
   
-  cv::Mat uvMat(2, 3, CV_64F);
-  uvMat.at<double>(0,0) = 1.0/wf;
-  uvMat.at<double>(1,1) = -(1.0/hf);
-  if(bFacegen)conv.OutputToMetaseq_LineTri(o, uvMat, bThresholdMennuki);
-  else        conv.OutputToMetaseq_LineOnly(o);
+  std::wstring dppath = GetDrawPolygonPathW();
+  std::wstring outpath = MyGetTempFilePathW();
+
+  
+  std::wstring cmd = L"\""+dppath+L"\" "+GetOptStrW(dlg)+L" --mode 0 --out \""+outpath+L"\"";
+
+  DWORD result = RunCmdW(cmd);
+  
+/*  ::boost::process::environment env = ::boost::this_process::environment();
+  ::boost::process::child c(dppath+" --mode 0 --out "+outpath, env, ::boost::process::windows::hide);
+  c.wait();
+  int result = c.exit_code();
+  */
+  if(result!=0)
+  {
+    OutputDebugStringA("DrawPolygon.exe failed!");
+    _wremove(outpath.c_str());
+    return false;
+  }
+  
+  bool ret = loadPoly(o, outpath.c_str());
+  
+  _wremove(outpath.c_str());
+  
+  if(!ret)
+  {
+    OutputDebugStringA("loadPoly failed!");
+    return false;
+  }
 
   if(bOptimize)o->OptimizeVertex(0.0f, NULL);
   doc->AddObject(o);
-  
-  conv.reset();
   
   //const char* source_window = "Source";
   //cv::namedWindow( source_window, cv::WINDOW_NORMAL );
   //imshow( source_window, dstEdge );
   //cv::waitKey(0);
   
-  return TRUE;
-}
-
-
-transform3 rotateX(double angle)
-{
-#ifdef MYOUTPUTDEBUG
-  char buf[1025];
-  double degree = angle*180.0/M_PI;
-  sprintf(buf, "rotateX: %f rad, %f degree\n", angle,degree);
-  OutputDebugStringA(buf);
-#endif
-
-  double cosa = cos(angle);
-  double sina = sin(angle);
-  return transform3(
-      1,   0,    0,
-      0,cosa,-sina,
-      0,sina, cosa
-  );
-}
-transform3 rotateY(double angle)
-{
-#ifdef MYOUTPUTDEBUG
-  char buf[1025];
-  double degree = angle*180.0/M_PI;
-  sprintf(buf, "rotateY: %f rad, %f degree\n", angle,degree);
-  OutputDebugStringA(buf);
-#endif
-
-  double cosa = cos(angle);
-  double sina = sin(angle);
-  return transform3(
-      cosa, 0, sina,
-      0,    1,    0,
-      -sina,0, cosa
-  );
-}
-transform3 rotateZ(double angle)
-{
-#ifdef MYOUTPUTDEBUG
-  char buf[1025];
-  double degree = angle*180.0/M_PI;
-  sprintf(buf, "rotateZ: %f rad, %f degree\n", angle,degree);
-  OutputDebugStringA(buf);
-#endif
-
-  double cosa = cos(angle);
-  double sina = sin(angle);
-  return transform3(
-      cosa,-sina,0,
-      sina, cosa,0,
-      0,       0,1
-  );
-}
-transform3 translate(Vector3 v)
-{
-  return transform3(
-      1, 0, 0, v.x(),
-      0, 1, 0, v.y(),
-      0, 0, 1, v.z()
-  );
-}
-transform3 flipX()
-{
-  return transform3(
-      1.0,  0.0, 0.0, 0.0,
-      0.0, -1.0, 0.0, 0.0,
-      0.0,  0.0, 1.0, 0.0
-  );
-}
-
-
-Vector3 normalize(Vector3 v)
-{
-  double l = sqrt(CGAL::to_double(v.squared_length()));
-  return (l==0.0) ? Vector3(0.0, 0.0, 0.0) : v/l;
-}
-Vector2 normalize(Vector2 v)
-{
-  double l = sqrt(CGAL::to_double(v.squared_length()));
-  return (l==0.0) ? Vector2(0.0, 0.0) : v/l;
-}
-
-
-//transform()ÇÃíçà”: transform3ÇÃà⁄ìÆê¨ï™ÇÕÅAPointÇÃÇ›çÏópÇ∑ÇÈÇÃÇ≈íçà”ÅBCGALÇÃédólÅBPointà»äOÇÃVectorÇ»Ç«ÇÇ©ÇØÇƒÇ‡à⁄ìÆÇµÇ»Ç¢
-//ëOíÒèåè: ìØÇ∂ëÂÇ´Ç≥ÇÃÉ|ÉäÉSÉìÇ≈Ç†ÇÈÇ±Ç∆ÅBägèkê¨ï™ÇÕåvéZÇ≥ÇÍÇ»Ç¢
-bool Tri3Dto2D(Vector3 *tri, Vector3 *newtri, transform3 &invMat)
-{
-  //Vector3 v2(tri[1].x-tri[0].x, tri[1].y-tri[0].y, tri[1].z-tri[0].z);
-  //Vector3 v3(tri[2].x-tri[0].x, tri[2].y-tri[0].y, tri[2].z-tri[0].z);
-  Vector3 v2 = tri[1] - tri[0];
-  Vector3 v3 = tri[2] - tri[0];
-  
-  //float PI_2 = PI/2.0f;
-  
-  //transform3 t1i = translate(tri[0]);//(CGAL::TRANSLATION, tri[0]);
-  transform3 t1i(CGAL::TRANSLATION, tri[0]);
-  //p3
-  OutputDebugStringVector3(tri[0]);
-  OutputDebugStringVector3(tri[1]);
-  OutputDebugStringVector3(tri[2]);
-  OutputDebugStringVector3(v2);
-  OutputDebugStringVector3(v3);
-  Vector2 vn = normalize(Vector2(v3.x(), v3.y()));
-  OutputDebugStringVector2(vn);
-  double angle1 = acos(CGAL::to_double(vn.x()));
-  if(v3.y()>0.0)angle1 = -angle1;
-  transform3 r1 = rotateZ(angle1);
-  transform3 r1i = rotateZ(-angle1);
-  v2 = r1.transform(v2);
-  v3 = r1.transform(v3);
-  Vector2 vn2 = normalize(Vector2(v3.x(), v3.z()));
-  double angle2 = acos(CGAL::to_double(vn2.x()));
-  if(v3.z()>0.0)angle2 = -angle2;
-  transform3 r2 = rotateY(-angle2);
-  transform3 r2i = rotateY(angle2);
-  v2 = r2.transform(v2);
-  v3 = r2.transform(v3);
-  //p2
-  Vector2 vn3 = normalize(Vector2(v2.y(), v2.z()));
-  double angle3 = acos(CGAL::to_double(vn3.x()));
-  if(v2.z()>0.0)angle3 = -angle3;
-  transform3 r3 = rotateX(angle3);
-  transform3 r3i = rotateX(-angle3);
-  v2 = r3.transform(v2);
-  v3 = r3.transform(v3);
-  
-  
-  OutputDebugStringVector3(v2);
-  OutputDebugStringVector3(v3);
-  
-  newtri[0] = Vector3(0.0,0.0,0.0);
-  /*v2 = tri[1] - tri[0];
-  v2 = r1.transform(v2);
-  v3 = tri[2] - tri[0];
-  v3 = r1.transform(v3);
-  v2 = r2.transform(v2);
-  v3 = r2.transform(v3);*/
-  newtri[1] = v2;
-  newtri[2] = v3;
-  
-  //invMat = r3i * r2i * r1i;
-  invMat = t1i * r1i * r2i * r3i;     // (r3 * (r2 *(r1 * (t1 * v)))) = v2, (t1i * (r1i * (r2i * (r3i * v2)))) = v, (t1i * r1i * r2i * r3i) * v2 = v; http://www.geisya.or.jp/~mwm48961/kou2/matrix3.html
-  //invMat = r1i * r2i * r3i * t1i;
-  //invMat = t1i * r1i * r2i * r3i;
-  //invMat = r3i * r2i * r1i * t1i;
-  
-  //newtri[0] = invMat.transform(Vector3(0.0,0.0,0.0));
-  //newtri[1] = invMat.transform(v2);
-  //newtri[2] = invMat.transform(v3);
-  /*newtri[0] = r3i.transform(Vector3(0.0,0.0,0.0));
-  newtri[1] = r3i.transform(v2);
-  newtri[2] = r3i.transform(v3);
-  newtri[0] = r2i.transform(newtri[0]);
-  newtri[1] = r2i.transform(newtri[1]);
-  newtri[2] = r2i.transform(newtri[2]);
-  newtri[0] = r1i.transform(newtri[0]);
-  newtri[1] = r1i.transform(newtri[1]);
-  newtri[2] = r1i.transform(newtri[2]);
-  //OutputDebugStringVector3(newtri[0]);
-  //newtri[0] = t1i.transform(newtri[0]);
-  //OutputDebugStringVector3(newtri[0]);
-  //newtri[1] = t1i.transform(newtri[1]);
-  //newtri[2] = t1i.transform(newtri[2]);
-  newtri[0] = newtri[0]+tri[0];
-  newtri[1] = newtri[1]+tri[0];
-  newtri[2] = newtri[2]+tri[0];
-  */
   return true;
 }
 
-/*
 
-*/
-void CalcSizeAndShift(Vector3 *tri2d, int *w, int *h, double *shiftx, double *shifty, double padding = 1.0)
+
+
+
+
+MyPoint MQPointToMyPoint(MQPoint p)
 {
-  double minx = DBL_MAX, maxx = DBL_MIN;
-  double miny = DBL_MAX, maxy = DBL_MIN;
-  for(int i=0;i<3;i++)
+  return MyPoint(p.x, p.y, p.z);
+}
+MyCoordinate MQCoordinateToMyCoordinate(MQCoordinate uv)
+{
+  return MyCoordinate(uv.u, uv.v);
+}
+void MQCoordinateToMyCoordinate(int num, MQCoordinate *uv, MyCoordinate *uv2)
+{
+  for(int i=0;i<num;i++)
   {
-    double x = CGAL::to_double(tri2d[i].x());
-    double y = CGAL::to_double(tri2d[i].y());
-    minx = MIN(x, minx);
-    maxx = MAX(x, maxx);
-    miny = MIN(y, miny);
-    maxy = MAX(y, maxy);
+    uv2[i] = MQCoordinateToMyCoordinate(uv[i]);
   }
-  
-  int minx2 = (minx - padding);
-  int miny2 = (miny - padding);
-  int maxx2 = (maxx + 0.5 + padding);
-  int maxy2 = (maxy + 0.5 + padding);
-  *w = maxx2-minx2;
-  *h = maxy2-miny2;
-  *shiftx = minx - padding;
-  *shifty = miny - padding;
-  
-#ifdef MYOUTPUTDEBUG
-  char buf[1025];
-  sprintf(buf, "CalcSizeAndShift: w=%d, h=%d, shiftx=%f, shifty=%f\n", *w, *h, *shiftx, *shifty);
-  OutputDebugStringA(buf);
-#endif
 }
 
-bool CalcCoord(Point2 &pt, Triangle_coordinates &triangle_coordinates, MQCoordinate *triuv, MQCoordinate &retUV)
+bool _OutputSelectedFaces(_MyObject &_oDst, std::vector<bool> &matUsed, MQDocument doc, std::vector<int> &matIds, MQObject ignoreParentObj = NULL)
 {
-  std::vector<FT> coord(3);
-  triangle_coordinates(pt, std::inserter(coord, coord.end()));
+  MyObject oDst = &_oDst;
+  int newidx[3];
+  MyCoordinate uv2[3];
   
-  retUV.u = triuv[0].u * CGAL::to_double(coord[0]) + triuv[1].u * CGAL::to_double(coord[1]) + triuv[2].u * CGAL::to_double(coord[2]);
-  retUV.v = triuv[0].v * CGAL::to_double(coord[0]) + triuv[1].v * CGAL::to_double(coord[1]) + triuv[2].v * CGAL::to_double(coord[2]);
+  int vidx[3];
+  MQCoordinate triuv[3];
+  MQPoint pts[3];
   
-  return (coord[0]>=0.0 && coord[1]>=0.0 && coord[2]>=0.0);
-}
-
-cv::Mat CalcRasterizeMatrix(Vector3 *tri2d, double shiftx, double shifty, MQCoordinate *triuv, cv::Size srcSize, cv::Mat *matUVCalc = NULL)
-{
-  cv::Point2f src[3], src2[3];
-  cv::Point2f dst[3], dst2[3];
+  int numMaterials = doc->GetMaterialCount();
+  matUsed.resize(numMaterials, false);
   
-  for(int i=0;i<3;i++)
+  int numobj = doc->GetObjectCount();
+  for(int oi=0;oi<numobj;oi++)
   {
-    src[i] = cv::Point2f(triuv[i].u * srcSize.width, triuv[i].v * srcSize.height);
-    dst[i] = cv::Point2f(CGAL::to_double(tri2d[i].x())-shiftx, CGAL::to_double(tri2d[i].y())-shifty);
-    src2[i] = cv::Point2f(triuv[i].u, triuv[i].v);
-    dst2[i] = cv::Point2f(CGAL::to_double(tri2d[i].x()), CGAL::to_double(tri2d[i].y()));
-  }
-  
-#ifdef MYOUTPUTDEBUG
-  char buf[1025];
-  for(int i=0;i<3;i++)
-  {
-    sprintf(buf, "src[%d] = %f, %f\n", i, src[i].x, src[i].y);
-    OutputDebugStringA(buf);
-  }
-  for(int i=0;i<3;i++)
-  {
-    sprintf(buf, "dst[%d] = %f, %f\n", i, dst[i].x, dst[i].y);
-    OutputDebugStringA(buf);
-  }
-#endif
-  if(matUVCalc!=NULL)
-  {
-    (*matUVCalc) = cv::getAffineTransform(dst2, src2);
-  }
-  
-  return cv::getAffineTransform(src, dst);
-}
-
-BOOL GetTriangleBitmap(cv::Mat &matSrc, cv::Mat &matDst, Vector3 *tri2d, MQCoordinate *triuv, double *shiftx, double *shifty, double padding, cv::Mat &matUVCalc)
-{
-  int w, h;
-  CalcSizeAndShift(tri2d, &w, &h, shiftx, shifty, padding);
-  
-  Triangle_coordinates triangle_coordinates(Point2(tri2d[0].x(), tri2d[0].y()), Point2(tri2d[1].x(), tri2d[1].y()), Point2(tri2d[2].x(), tri2d[2].y()));
-  
-  OutputDebugCVSize(matSrc.size());
-  
-  matDst.create(h, w, CV_8UC4);
-  matDst = cv::Scalar(0xFF);
-  cv::Mat matRaster = CalcRasterizeMatrix(tri2d, *shiftx, *shifty, triuv, matSrc.size(), &matUVCalc);
-  warpAffine(matSrc, matDst, matRaster, matDst.size(), cv::INTER_LANCZOS4, cv::BORDER_WRAP);
-  
-  OutputDebugCVSize(matDst.size());
-  /*
-  unsigned char *p = matDst.data;
-  for(int k=0;k<h;k++)
-  {
-    for(int i=0;i<w;i++)
+    MQObject o = doc->GetObject(oi);
+    if(o==NULL || o->GetLocking() || o->GetVisible()==0)continue;
+    
+    if(ignoreParentObj!=NULL)
     {
-      Point2 pt(i + shiftx, k + shifty);
-      MQCoordinate coord;
-      bool bHit = CalcCoord(pt, triangle_coordinates, triuv, coord);
-      for(int m=0;m<4;m++)
+      MQObject oParent = doc->GetParentObject(o);
+      if(oParent==ignoreParentObj)continue;
+    }
+    
+    int numV = o->GetVertexCount();
+    int numF = o->GetFaceCount();
+    for(int fi=0;fi<numF;fi++)
+    {
+      if(doc->IsSelectFace(oi, fi)==FALSE)continue;
+      int numFV = o->GetFacePointCount(fi);
+      if(numFV!=3)continue;
+      
+      GetPointAndCoord(o, fi, 3, vidx, pts, triuv);
+      for(int i=0;i<3;i++)
       {
-        *p = 0xFF;
-        p++;
+        newidx[i] = oDst->AddVertex(MQPointToMyPoint(pts[i]));
       }
+      int newfi = oDst->AddFace(3, newidx);
+      int mqMatIdx = o->GetFaceMaterial(fi);
+      matUsed[mqMatIdx] = true;
+      if(mqMatIdx>=0)oDst->SetFaceMaterial(newfi, mqMatIdx);
+      MQCoordinateToMyCoordinate(3, triuv, uv2);
+      oDst->SetFaceCoordinateArray(newfi, uv2);
     }
   }
-  */
-  //cv::flip(matDst, matDst, 0);
   
-  return TRUE;
+  return true;
 }
-
-int __FindTextureIndex(std::vector<std::pair<std::string, cv::Mat>> &texLoaded, const char *fullpath)
+bool OutputSelectedFacesW(MQDocument doc, const wchar_t *outPath, std::vector<int> &matIds, MQObject ignoreParentObj = NULL)
 {
-  for(int i=0;i<texLoaded.size();i++)
+  _MyObject _oDst;
+  MyObject oDst = &_oDst;
+  std::vector<bool> matUsed;
+  
+  bool bRet = _OutputSelectedFaces(_oDst, matUsed, doc, matIds, ignoreParentObj);
+  if(!bRet)return false;
+  
+  bRet = oDst->write(outPath);
+  if(!bRet)return false;
+  
+  int numMaterials = doc->GetMaterialCount();
+  for(int i=0;i<numMaterials;i++)
   {
-    if(texLoaded[i].first == fullpath)return i;
+    if(matUsed[i])matIds.push_back(i);
   }
-  return -1;
+  return bRet;
 }
-
-int __LoadMQTexture(MQDocument doc, int matIdx, std::vector<std::pair<std::string, cv::Mat>> &texLoaded)
+bool OutputSelectedFacesA(MQDocument doc, const char *outPath, std::vector<int> &matIds, MQObject ignoreParentObj = NULL)
 {
-  MQMaterial mqmat = doc->GetMaterial(matIdx);
-  if(mqmat==NULL)return -2;
-  char texPath[_MAX_PATH*2 + 2];
-  mqmat->GetTextureName(texPath, _MAX_PATH*2);
-  char texFullPath[_MAX_PATH*2 + 2];
-  if(!doc->FindMappingFile(texFullPath, texPath, MQMAPPING_TEXTURE))return -2;
+  _MyObject _oDst;
+  MyObject oDst = &_oDst;
+  std::vector<bool> matUsed;
   
-  int texidx = __FindTextureIndex(texLoaded, texFullPath);
-  if(texidx!=-1)return texidx;
+  bool bRet = _OutputSelectedFaces(_oDst, matUsed, doc, matIds, ignoreParentObj);
+  if(!bRet)return false;
   
-  cv::Mat mat = cv::imread(texFullPath);
-  if(mat.empty())return -2;
-  texLoaded.push_back(std::make_pair(std::string(texFullPath), mat));
-  return texLoaded.size()-1;
-}
-
-int _FindIndex_texLoaded(std::vector<int> &texLoadStatus, std::vector<std::pair<std::string, cv::Mat>> &texLoaded, MQDocument doc, MQObject o, int matIdx)
-{
-  if(matIdx==-1)return -1;
-  int texStat = texLoadStatus[matIdx];
-  if(texStat==-2)return -1;
-  if(texStat==-1)
+  bRet = oDst->write(outPath);
+  if(!bRet)return false;
+  
+  int numMaterials = doc->GetMaterialCount();
+  for(int i=0;i<numMaterials;i++)
   {
-    int ret = __LoadMQTexture(doc, matIdx, texLoaded);
-    texLoadStatus[matIdx]=ret;
-    if(ret<0)return -1;
+    if(matUsed[i])matIds.push_back(i);
   }
-  return texLoadStatus[matIdx];
-}
-
-void WhiteOutsideTri(cv::Mat &mat, Point2 *tri2dShift)
-{
-  cv::Mat mask = cv::Mat(mat.rows, mat.cols, CV_8UC1);
-  mask.setTo(cv::Scalar(0));
-  cv::Point points[3];
-  points[0] = point2ToCvPoint(tri2dShift[0]);
-  points[1] = point2ToCvPoint(tri2dShift[1]);
-  points[2] = point2ToCvPoint(tri2dShift[2]);
-  cv::fillConvexPoly(mask, points, 3, cv::Scalar(255));
-  cv::Mat maskNot = cv::Mat(mat.rows, mat.cols, CV_8UC1);
-  cv::bitwise_not(mask, maskNot);
-  mat.setTo(cv::Scalar(255,255,255,255), maskNot);
+  return bRet;
 }
 
 
-BOOL ConvertFromTextureSlow(MQDocument doc, DrawPolygonDialog &dlg)
+bool ConvertFromTextureSlow(MQDocument doc, DrawPolygonDialog &dlg)
 {
   int edgeproc = dlg.combo_edgeproc->GetCurrentIndex();
   //int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
@@ -670,94 +537,61 @@ BOOL ConvertFromTextureSlow(MQDocument doc, DrawPolygonDialog &dlg)
   
   TriangulateSelected(doc);
   
-  int vidx[3];
-  MQCoordinate triuv[3];
-  MQPoint pts[3];
-  Vector3 tri[3];
-  Vector3 tri2d[3];
-  transform3 invMat;
-  
   //int numMaterial = doc->GetMaterialCount();
   //std::vector<int> texLoadStatus(numMaterial, -1);
   //std::vector<std::pair<std::string, cv::Mat>> texLoaded;
-  MQTexManager texManager(doc);
     
   MQObject oOut = MQ_CreateObject();
   char objname[151];
   doc->GetUnusedObjectName(objname, 150, "draw");
   oOut->SetName(objname);
   
-  CRaster2Vector conv(dlg);
   
-  int numobj = doc->GetObjectCount();
-  for(int oi=0;oi<numobj;oi++)
+  MQObject mqoCacheRoot = _FindMQObjectByName(doc, "MQDrawPolygonTexCache");
+  
+  std::wstring dppath = GetDrawPolygonPathW();
+  
+  std::wstring tripath = MyGetTempFilePathW();
+  std::vector<int> matIds;
+  bool bRet = OutputSelectedFacesW(doc, tripath.c_str(), matIds, mqoCacheRoot);
+  if(!bRet)return false;
+  
+  std::wstring dpmrpath = MyGetTempFilePathW();
+  bRet = MQTexManager::SaveDPMR(dpmrpath.c_str(), doc, matIds);
+  if(!bRet)
   {
-    MQObject o = doc->GetObject(oi);
-    if(o==NULL || o==oOut || o->GetLocking() || o->GetVisible()==0)continue;
-    
-    int numV = o->GetVertexCount();
-    int numF = o->GetFaceCount();
-    for(int fi=0;fi<numF;fi++)
-    {
-      if(doc->IsSelectFace(oi, fi)==FALSE)continue;
-      int numFV = o->GetFacePointCount(fi);
-      if(numFV!=3)continue;
-      
-      /*
-      int mqMatIdx = o->GetFaceMaterial(fi);
-      int idx_texLoaded = _FindIndex_texLoaded(texLoadStatus, texLoaded, doc, o, mqMatIdx);
-      if(idx_texLoaded<0 || idx_texLoaded>=texLoaded.size())continue;
-      cv::Mat &texMat = texLoaded[idx_texLoaded].second;
-      */
-      CacheTexInfo *pTexInfo = texManager.GetTexture(o, fi);
-      if(pTexInfo==NULL)continue;
-      cv::Mat &texMat = pTexInfo->matRaster;
-      
-      GetPointAndCoord(o, fi, 3, vidx, pts, triuv);
-      MQPointToVector3(pts, tri, 3);
-      Tri3Dto2D(tri, tri2d, invMat);
-      cv::Mat mat, matUVCalc;
-      double shiftx, shifty;
-      double padding = 10.0;
-      GetTriangleBitmap(texMat, mat, tri2d, triuv, &shiftx, &shifty, padding, matUVCalc);
-      
-      Point2 tri2dShift[3];
-      for(int i=0;i<3;i++)
-      {
-        tri2dShift[i] = Point2(tri2d[i].x() - shiftx, tri2d[i].y() - shifty);
-      }
-      
-      WhiteOutsideTri(mat, tri2dShift);
-  MyOutputDebugStringA("-GetTriangleBitmap\n");
-      
-      
-      /*
-  const char* source_window = "Source";
-  cv::namedWindow( source_window, cv::WINDOW_NORMAL );
-  imshow( source_window, mat );
-  cv::waitKey(0);
-  */
-  
-      if(conv.Raster2Vector(mat)==FALSE)continue;
-      
-      conv.AddPoints(tri2d, 3);
-    
-      //printf("type = %d, depth = %d, channels = %d\n", dstEdge.type(), dstEdge.depth(), dstEdge.channels());
-
-      //float wf = dstEdge.cols, hf = dstEdge.rows;
-      
-  MyOutputDebugStringA("+OutputToMetaseq\n");
-      
-      int mqMatIdx = o->GetFaceMaterial(fi);
-      Point2 shift2d(shiftx, shifty);
-      if(bFacegen)conv.OutputToMetaseq_LineTri(oOut, matUVCalc, bThresholdMennuki, &invMat, false, mqMatIdx, tri2d, &shift2d, padding);
-      else        conv.OutputToMetaseq_LineOnly(oOut, &invMat, tri2d, &shift2d, padding);
-  MyOutputDebugStringA("-OutputToMetaseq\n");
-      
-      conv.reset();
-    
-    }
+    _wremove(tripath.c_str());
+    return false;
   }
+  
+  
+  std::wstring outpath = MyGetTempFilePathW();
+  
+  
+  std::wstring cmd = L"\""+dppath+L"\""+GetOptStrW(dlg)+L" --mode 2 --in \""+tripath+L"\" --texCache \""+dpmrpath+L"\" --out \""+outpath+L"\"";
+
+  DWORD result = RunCmdW(cmd);
+  if(result!=0)
+  {
+    OutputDebugStringA("DrawPolygon.exe failed!");
+    _wremove(tripath.c_str());
+    _wremove(dpmrpath.c_str());
+    _wremove(outpath.c_str());
+    return false;
+  }
+  
+  bool ret = loadPoly(oOut, outpath.c_str());
+  
+  _wremove(tripath.c_str());
+  _wremove(dpmrpath.c_str());
+  _wremove(outpath.c_str());
+  
+  if(!ret)
+  {
+    OutputDebugStringA("loadPoly failed!");
+    return false;
+  }
+  
   if(bOptimize)
   {
     MyOutputDebugStringA("OptimizeVertex\n");
@@ -766,18 +600,16 @@ BOOL ConvertFromTextureSlow(MQDocument doc, DrawPolygonDialog &dlg)
   MyOutputDebugStringA("AddObject\n");
   doc->AddObject(oOut);
   
-  conv.reset();
-  
   //const char* source_window = "Source";
   //cv::namedWindow( source_window, cv::WINDOW_NORMAL );
   //imshow( source_window, dstEdge );
   //cv::waitKey(0);
   MyOutputDebugStringA("End\n");
   
-  return TRUE;
+  return true;
 }
 
-BOOL ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
+bool ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
 {
   int edgeproc = dlg.combo_edgeproc->GetCurrentIndex();
   //int vectorconv = dlg.combo_vectorconv->GetCurrentIndex();
@@ -791,17 +623,7 @@ BOOL ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   
   TriangulateSelected(doc);
   
-  int vidxTri[3];
-  MQCoordinate triuv[3];
-  MQPoint pts[3];
-  Vector3 tri[3];
-  Vector3 tri2d[3];
-  transform3 invMat;
-  
-  //int numMaterial = doc->GetMaterialCount();
-  //std::vector<int> texLoadStatus(numMaterial, -1);
-  //std::vector<std::pair<std::string, cv::Mat>> texLoaded;
-  MQTexManager texManager(doc, &dlg, true);
+  _MyObject oDst;
     
   MQObject oOut = MQ_CreateObject();
   char objname[151];
@@ -810,50 +632,49 @@ BOOL ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   
   MQObject mqoCacheRoot = _FindMQObjectByName(doc, "MQDrawPolygonTexCache");
   
-  CRaster2Vector conv(dlg);
+  std::string dppath = GetDrawPolygonPathA();
   
-  int numobj = doc->GetObjectCount();
-  for(int oi=0;oi<numobj;oi++)
+  std::string tripath = MyGetTempFilePathA();
+  std::vector<int> matIds;
+  bool bRet = OutputSelectedFacesA(doc, tripath.c_str(), matIds, mqoCacheRoot);
+  if(!bRet)return false;
+  
+  std::string dpmvpath = MyGetTempFilePathA();
+  bRet = MQTexManager::SaveDPMV(dpmvpath.c_str(), doc, dlg, matIds, bOptimize);
+  if(!bRet)
   {
-    MQObject o = doc->GetObject(oi);
-    if(o==NULL || o==oOut || o->GetLocking() || o->GetVisible()==0)continue;
-    
-    if(mqoCacheRoot!=NULL)
-    {
-      MQObject oParent = doc->GetParentObject(o);
-      if(oParent==mqoCacheRoot)continue;
-    }
-    
-    int numV = o->GetVertexCount();
-    int numF = o->GetFaceCount();
-    for(int fi=0;fi<numF;fi++)
-    {
-      if(doc->IsSelectFace(oi, fi)==FALSE)continue;
-      int numFV = o->GetFacePointCount(fi);
-      if(numFV!=3)continue;
-      
-      /*
-      int mqMatIdx = o->GetFaceMaterial(fi);
-      int idx_texLoaded = _FindIndex_texLoaded(texLoadStatus, texLoaded, doc, o, mqMatIdx);
-      if(idx_texLoaded<0 || idx_texLoaded>=texLoaded.size())continue;
-      cv::Mat &texMat = texLoaded[idx_texLoaded].second;
-      */
-      CacheTexInfo *pTexInfo = texManager.GetTexture(o, fi);
-      if(pTexInfo==NULL)continue;
-      MQObject mqoTex = pTexInfo->o;
-      
-      std::vector<MQPoint> ptsTri(numFV);
-      std::vector<MQCoordinate> coordTri(numFV);
-      GetPointAndCoord(o, fi, numFV, vidxTri, ptsTri, coordTri);
-      
-      conv.OutputToMetaseqFast_LineTri(oOut, *pTexInfo, ptsTri, coordTri, modeZScale, zscale);
-      
-      
-      conv.reset();
-      
-    
-    }
+    remove(tripath.c_str());
+    return false;
   }
+  
+  
+  std::string outpath = MyGetTempFilePathA();
+  
+  
+  std::string cmd = "\""+dppath+"\""+GetOptStrA(dlg)+" --mode 1 --in \""+tripath+"\" --texCache \""+dpmvpath+"\" --out \""+outpath+"\"";
+
+  DWORD result = RunCmdA(cmd);
+  if(result!=0)
+  {
+    OutputDebugStringA("DrawPolygon.exe failed!");
+    remove(tripath.c_str());
+    remove(dpmvpath.c_str());
+    remove(outpath.c_str());
+    return false;
+  }
+  
+  bool ret = loadPoly(oOut, outpath.c_str());
+  
+  remove(tripath.c_str());
+  remove(dpmvpath.c_str());
+  remove(outpath.c_str());
+  
+  if(!ret)
+  {
+    OutputDebugStringA("loadPoly failed!");
+    return false;
+  }
+  
   if(bOptimize)
   {
     MyOutputDebugStringA("OptimizeVertex\n");
@@ -862,15 +683,13 @@ BOOL ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   MyOutputDebugStringA("AddObject\n");
   doc->AddObject(oOut);
   
-  conv.reset();
-  
   //const char* source_window = "Source";
   //cv::namedWindow( source_window, cv::WINDOW_NORMAL );
   //imshow( source_window, dstEdge );
   //cv::waitKey(0);
   MyOutputDebugStringA("End\n");
   
-  return TRUE;
+  return true;
 }
 
 BOOL DrawPolygon(MQDocument doc)
@@ -885,7 +704,7 @@ BOOL DrawPolygon(MQDocument doc)
 
   int srcType = dlg.combo_src->GetCurrentIndex();
   
-  BOOL bRet = FALSE;
+  bool bRet = false;
   switch(srcType)
   {
   case 0:
@@ -902,6 +721,6 @@ BOOL DrawPolygon(MQDocument doc)
   
   MQ_RefreshView(NULL);
   
-  return bRet;
+  return bRet ? TRUE : FALSE;
 }
 

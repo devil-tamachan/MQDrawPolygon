@@ -1,4 +1,4 @@
-
+ï»¿
 #ifndef _TAMADRAWPOLYDLG_
 #define _TAMADRAWPOLYDLG_
 
@@ -53,7 +53,7 @@ public:
     bool bVisibleObjOnly = check_visibleObjOnly->GetChecked();
     
     combo_filterobj->ClearItems();
-    combo_filterobj->AddItem(L"‚·‚×‚Ä‚ÌƒIƒuƒWƒFƒNƒg");
+    combo_filterobj->AddItem(L"ã™ã¹ã¦ã®ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ");
     m_objIdx.clear();
     int numObj = doc->GetObjectCount();
     for(int i=0;i<numObj;i++)
@@ -105,84 +105,84 @@ DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
   MQFrame *paramFrame = CreateHorizontalFrame(mainFrame);
   paramFrame->SetMatrixColumn(2);
   
-  CreateLabel(paramFrame, L"“ü—Í‰æ‘œ");
+  CreateLabel(paramFrame, L"å…¥åŠ›ç”»åƒ");
   combo_src = CreateComboBox(paramFrame);
-  combo_src->AddItem(L"ƒRƒsƒy‰æ‘œ");
-  combo_src->AddItem(L"–ÊƒeƒNƒXƒ`ƒƒ/‚‘¬");
-  combo_src->AddItem(L"–ÊƒeƒNƒXƒ`ƒƒ/’á‘¬");
+  combo_src->AddItem(L"ã‚³ãƒ”ãƒšç”»åƒ");
+  combo_src->AddItem(L"é¢ãƒ†ã‚¯ã‚¹ãƒãƒ£/é«˜é€Ÿ");
+  combo_src->AddItem(L"é¢ãƒ†ã‚¯ã‚¹ãƒãƒ£/ä½Žé€Ÿ");
   combo_src->SetCurrentIndex(0);
   combo_src->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
-  lbl_combo_filterobj = CreateLabel(paramFrame, L"“ü—ÍƒIƒuƒWƒFƒNƒg");
+  lbl_combo_filterobj = CreateLabel(paramFrame, L"å…¥åŠ›ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ");
   combo_filterobj = CreateComboBox(paramFrame);
   combo_filterobj->SetCurrentIndex(0);
 
-  lbl_check_visibleObjOnly = CreateLabel(paramFrame, L"\"“ü—ÍƒIƒuƒWƒFƒNƒg\"‚©‚ç”ñ•\Ž¦ƒIƒuƒWƒF‚ðœ‚­");
+  lbl_check_visibleObjOnly = CreateLabel(paramFrame, L"\"å…¥åŠ›ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ\"ã‹ã‚‰éžè¡¨ç¤ºã‚ªãƒ–ã‚¸ã‚§ã‚’é™¤ã");
   check_visibleObjOnly = CreateCheckBox(paramFrame);
   check_visibleObjOnly->SetChecked(true);
   check_visibleObjOnly->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
-  lbl_combo_zscale = CreateLabel(paramFrame, L"—§‘ÌƒeƒNƒXƒ`ƒƒ‚ÌZLk");
+  lbl_combo_zscale = CreateLabel(paramFrame, L"ç«‹ä½“ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®Zä¼¸ç¸®");
   combo_zscale = CreateComboBox(paramFrame);
-  combo_zscale->AddItem(L"Lk‚µ‚È‚¢");
-  combo_zscale->AddItem(L"UV–ÊÏ”ä‚ÅZLk");
-  combo_zscale->AddItem(L"ŒÅ’è’l");
+  combo_zscale->AddItem(L"ä¼¸ç¸®ã—ãªã„");
+  combo_zscale->AddItem(L"UVé¢ç©æ¯”ã§Zä¼¸ç¸®");
+  combo_zscale->AddItem(L"å›ºå®šå€¤");
   combo_zscale->SetCurrentIndex(1);
   combo_zscale->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
-  lbl_dblspin_zscale = CreateLabel(paramFrame, L"—§‘ÌƒeƒNƒXƒ`ƒƒ‚ÌZLk—¦");
+  lbl_dblspin_zscale = CreateLabel(paramFrame, L"ç«‹ä½“ãƒ†ã‚¯ã‚¹ãƒãƒ£ã®Zä¼¸ç¸®çŽ‡");
   dblspin_zscale = CreateDoubleSpinBox(paramFrame);
   dblspin_zscale->SetMin(0.0000001);
   dblspin_zscale->SetPosition(1.0);
   
-  CreateLabel(paramFrame, L"ƒ‰ƒCƒ“’Šo");
+  CreateLabel(paramFrame, L"ãƒ©ã‚¤ãƒ³æŠ½å‡º");
   combo_edgeproc = CreateComboBox(paramFrame);
-  combo_edgeproc->AddItem(L"Canny (‚¨‚·‚·‚ß)");
+  combo_edgeproc->AddItem(L"Canny (ãŠã™ã™ã‚)");
   combo_edgeproc->AddItem(L"Laplacian");
   combo_edgeproc->AddItem(L"Sobel");
-  combo_edgeproc->AddItem(L"–³‚µi’†‰›üj");
+  combo_edgeproc->AddItem(L"ç„¡ã—ï¼ˆä¸­å¤®ç·šï¼‰");
   combo_edgeproc->SetCurrentIndex(0);
   combo_edgeproc->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
-  CreateLabel(paramFrame, L"ƒxƒNƒgƒ‹‰»");
+  CreateLabel(paramFrame, L"ãƒ™ã‚¯ãƒˆãƒ«åŒ–");
   combo_vectorconv = CreateComboBox(paramFrame);
-  combo_vectorconv->AddItem(L"ƒ‚ƒmƒNƒ’l‚ðd‚Ý‚Æ‚µ‚ÄŽg—p");
-  combo_vectorconv->AddItem(L"2’l‰»id‚Ý–³‚µjj");
+  combo_vectorconv->AddItem(L"ãƒ¢ãƒŽã‚¯ãƒ­å€¤ã‚’é‡ã¿ã¨ã—ã¦ä½¿ç”¨");
+  combo_vectorconv->AddItem(L"2å€¤åŒ–ï¼ˆé‡ã¿ç„¡ã—ï¼‰ï¼‰");
   combo_vectorconv->SetCurrentIndex(0);
   combo_vectorconv->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
-  lbl_slider_threshold = CreateLabel(paramFrame, L"2’l‰»‚Ì”»’è’l");
+  lbl_slider_threshold = CreateLabel(paramFrame, L"2å€¤åŒ–ã®åˆ¤å®šå€¤");
   slider_threshold = CreateSlider(paramFrame);
   slider_threshold->SetMin(0.01);
   slider_threshold->SetMax(0.99);
   slider_threshold->SetPosition(0.5);
   slider_threshold->SetEnabled(false);
   
-  CreateLabel(paramFrame, L"o—Í’¸“_”");
+  CreateLabel(paramFrame, L"å‡ºåŠ›é ‚ç‚¹æ•°");
   spin_np = CreateSpinBox(paramFrame);
   spin_np->SetMin(2);
   spin_np->SetMax(1000);
   spin_np->SetPosition(100);
 
-  CreateLabel(paramFrame, L"–Ê‚ð¶¬");
+  CreateLabel(paramFrame, L"é¢ã‚’ç”Ÿæˆ");
   check_facegen = CreateCheckBox(paramFrame);
   check_facegen->SetChecked(true);
   check_facegen->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
 
-  lbl_check_thresholdMennuki = CreateLabel(paramFrame, L"–Ê”²‚«‚·‚é");
+  lbl_check_thresholdMennuki = CreateLabel(paramFrame, L"é¢æŠœãã™ã‚‹");
   check_thresholdMennuki = CreateCheckBox(paramFrame);
   check_thresholdMennuki->SetChecked(true);
   check_thresholdMennuki->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
   
-  lbl_slider_thresholdMennuki = CreateLabel(paramFrame, L"–Ê”²‚«”»’è’l (‘½‚­Žc‚é¨)");
+  lbl_slider_thresholdMennuki = CreateLabel(paramFrame, L"é¢æŠœãåˆ¤å®šå€¤ (å¤šãæ®‹ã‚‹â†’)");
   slider_thresholdMennuki = CreateSlider(paramFrame);
   slider_thresholdMennuki->SetMin(0.01);
   slider_thresholdMennuki->SetMax(0.99);
   slider_thresholdMennuki->SetPosition(0.5);
   slider_thresholdMennuki->SetEnabled(true);
 
-  CreateLabel(paramFrame, L"‹ßÚ‚·‚é’¸“_‚ðÚ‡");
+  CreateLabel(paramFrame, L"è¿‘æŽ¥ã™ã‚‹é ‚ç‚¹ã‚’æŽ¥åˆ");
   check_optimize = CreateCheckBox(paramFrame);
   check_optimize->SetChecked(true);
 

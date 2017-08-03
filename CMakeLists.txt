@@ -14,7 +14,7 @@ include( ${CGAL_USE_FILE} )
 
 find_package( OpenCV REQUIRED )
 
-find_package(Boost 1.64.0 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.64.0 COMPONENTS program_options filesystem REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIR})
 
@@ -56,4 +56,4 @@ add_library(MQDrawPolygon SHARED
 target_link_libraries( MQDrawPolygon ${GMP_LIBRARIES} )
 target_link_libraries( MQDrawPolygon ${MPFR_LIBRARIES} )
 target_link_libraries( MQDrawPolygon ${OpenCV_LIBS} )
-target_link_libraries( DrawPolygon ${Boost_LIBRARIES} )
+target_link_libraries( MQDrawPolygon ${Boost_LIBRARIES} )
