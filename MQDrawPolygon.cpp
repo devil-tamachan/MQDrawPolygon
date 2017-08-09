@@ -1,4 +1,4 @@
-
+﻿
 
 #if defined _WIN32 || defined __CYGWIN__
 #define WIN32_LEAN_AND_MEAN
@@ -574,6 +574,7 @@ bool ConvertFromTextureSlow(MQDocument doc, DrawPolygonDialog &dlg)
   if(result!=0)
   {
     OutputDebugStringA("DrawPolygon.exe failed!");
+    MQDialog::MessageWarningBox(MQWindow::GetMainWindow(), L"低速変換に失敗", L"Error");
     _wremove(tripath.c_str());
     _wremove(dpmrpath.c_str());
     _wremove(outpath.c_str());
@@ -657,6 +658,7 @@ bool ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   if(result!=0)
   {
     OutputDebugStringA("DrawPolygon.exe failed!");
+    MQDialog::MessageWarningBox(MQWindow::GetMainWindow(), L"ポリゴン高速変換に失敗", L"Error");
     remove(tripath.c_str());
     remove(dpmvpath.c_str());
     remove(outpath.c_str());

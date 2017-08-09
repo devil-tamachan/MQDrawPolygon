@@ -189,6 +189,8 @@ public:
     if(result!=0)
     {
       OutputDebugStringA("DrawPolygon.exe failed!");
+      std::wstring filenamew = MQEncoding::AnsiToWide(filename.c_str());
+      MQDialog::MessageWarningBox(MQWindow::GetMainWindow(), L"テクスチャ画像の変換に失敗: "+filenamew, L"Error");
       remove(outpath.c_str());
       return false;
     }

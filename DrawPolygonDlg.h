@@ -19,7 +19,7 @@ public:
   
   void UpdateEnable(MQDocument doc)
   {
-    MakeObjList(doc);
+    //MakeObjList(doc);
     bool bCenterLine = combo_edgeproc->GetCurrentIndex()==3 ? false:true;
     bool bFaceGen = check_facegen->GetChecked();
     bool bThresholdMennuki = check_thresholdMennuki->GetChecked();
@@ -41,13 +41,15 @@ public:
     lbl_slider_threshold->SetEnabled(slider_threshold->GetEnabled());
     
     bool bClipboard = combo_src->GetCurrentIndex()==0 ? true : false;
-    combo_filterobj->SetEnabled(!bClipboard);
+    /*combo_filterobj->SetEnabled(!bClipboard);
     lbl_combo_filterobj->SetEnabled(combo_filterobj->GetEnabled());
     
-    check_visibleObjOnly->SetEnabled(combo_filterobj->GetEnabled());
+    check_visibleObjOnly->SetEnabled(!bClipboard);
     lbl_check_visibleObjOnly->SetEnabled(check_visibleObjOnly->GetEnabled());
+    */
   }
 
+/*
   void MakeObjList(MQDocument doc)
   {
     bool bVisibleObjOnly = check_visibleObjOnly->GetChecked();
@@ -72,6 +74,7 @@ public:
     if(i>=0 && i<m_objIdx.size())return m_objIdx[i];
     return -1;
   }
+  */
 
   MQComboBox *combo_src;
   MQComboBox *combo_filterobj;
@@ -113,6 +116,7 @@ DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
   combo_src->SetCurrentIndex(0);
   combo_src->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
   
+  /*
   lbl_combo_filterobj = CreateLabel(paramFrame, L"入力オブジェクト");
   combo_filterobj = CreateComboBox(paramFrame);
   combo_filterobj->SetCurrentIndex(0);
@@ -121,6 +125,7 @@ DrawPolygonDialog::DrawPolygonDialog(MQWindowBase& parent) : MQDialog(parent)
   check_visibleObjOnly = CreateCheckBox(paramFrame);
   check_visibleObjOnly->SetChecked(true);
   check_visibleObjOnly->AddChangedEvent(this, &DrawPolygonDialog::uiChanged);
+  */
   
   lbl_combo_zscale = CreateLabel(paramFrame, L"立体テクスチャのZ伸縮");
   combo_zscale = CreateComboBox(paramFrame);
