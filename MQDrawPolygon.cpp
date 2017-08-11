@@ -16,6 +16,7 @@
 #if defined _WIN32 || defined __CYGWIN__
 #include <minmax.h>
 #endif
+#include "MQBasePlugin.h"
 #include "MQPlugin.h"
 #include "MQWidget.h"
 
@@ -41,8 +42,6 @@ inline int GetObject(HGDIOBJ p1, int p2, LPVOID p3)
 #include <atlmisc.h>
 #endif
 
-BOOL DrawPolygon(MQDocument doc);
-
 
 #include <iostream>
 #include <list>
@@ -53,6 +52,7 @@ BOOL DrawPolygon(MQDocument doc);
 #include "opencv2/imgproc.hpp"
 
 #include "TamaMQLib.h"
+#include "RunCmd.h"
 #include "CacheTexInfo.h"
 
 //#define MYOUTPUTDEBUG
@@ -93,8 +93,30 @@ inline void OutputDebugCVSize(cv::Size s) {}
 #endif
 
 
+
+class MQDrawPolygonPlugin : public MQSelectPlugin
+{
+public:
+  virtual void GetPlugInID(DWORD *Product, DWORD *ID)
+  {
+    *Product = 0xA8BEE201;
+    *ID      = 0xCD9DA490;
+  }
+  virtual const char *GetPlugInName(void)
+  {
+    return "MQDrawPolygon           Copyright(C) 2017, tamachan";
+  }
+  virtual const char *EnumString(int index)
+  {
+    switch(index){
+    case 0: return "DrawPolygon";
+    }
+    return NULL;
+  }
+  virtual BOOL Execute(int index, MQDocument doc);
+  
+};
 #include "DrawPolygonDlg.h"
-//#include "Raster2Vector.h"
 #include "MQTexManager.h"
 
 //---------------------------------------------------------------------------
@@ -109,86 +131,14 @@ BOOL APIENTRY DllMain( HANDLE hModule,
     return TRUE;
 }
 
-//---------------------------------------------------------------------------
-//  MQGetPlugInID
-//    プラグインIDを返す。
-//    この関数は起動時に呼び出される。
-//---------------------------------------------------------------------------
-MQPLUGIN_EXPORT void MQGetPlugInID(DWORD *Product, DWORD *ID)
-{
-	// プロダクト名(制作者名)とIDを、全部で64bitの値として返す
-	// 値は他と重複しないようなランダムなもので良い
-	*Product = 0xA8BEE201;
-	*ID      = 0xCD9DA490;
-}
 
-//---------------------------------------------------------------------------
-//  MQGetPlugInName
-//    プラグイン名を返す。
-//    この関数は[プラグインについて]表示時に呼び出される。
-//---------------------------------------------------------------------------
-MQPLUGIN_EXPORT const char *MQGetPlugInName(void)
+MQBasePlugin *GetPluginClass()
 {
-	// プラグイン名
-	return "MQDrawPolygon           Copyright(C) 2017, tamachan";
-}
-
-//---------------------------------------------------------------------------
-//  MQGetPlugInType
-//    プラグインのタイプを返す。
-//    この関数は起動時に呼び出される。
-//---------------------------------------------------------------------------
-MQPLUGIN_EXPORT int MQGetPlugInType(void)
-{
-	// 選択部変形用プラグインである
-	return MQPLUGIN_TYPE_SELECT;
-}
-
-//---------------------------------------------------------------------------
-//  MQEnumString
-//    ポップアップメニューに表示される文字列を返す。
-//    この関数は起動時に呼び出される。
-//---------------------------------------------------------------------------
-MQPLUGIN_EXPORT const char *MQEnumString(int index)
-{
-	switch(index){
-	case 0: return "DrawPolygon";
-	}
-	return NULL;
-}
-
-//---------------------------------------------------------------------------
-//  MQModifySelect
-//    メニューから選択されたときに呼び出される。
-//---------------------------------------------------------------------------
-MQPLUGIN_EXPORT BOOL MQModifySelect(int index, MQDocument doc)
-{
-  switch(index){
-  case 0: return DrawPolygon(doc);
-  }
-  return FALSE;
+  static MQDrawPolygonPlugin plugin;
+  return &plugin;
 }
 
 
-
-bool GetDllDirA(char *path, int size)
-{
-  //char path[_MAX_PATH+16];
-  HMODULE hModule = NULL;
-  if(!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,  (LPTSTR)&GetDllDirA, &hModule))return false;
-  if(!GetModuleFileNameA(hModule, path, size))return false;
-  PathRemoveFileSpecA(path);
-  return true;
-}
-bool GetDllDirW(wchar_t *path, int size)
-{
-  //char path[_MAX_PATH+16];
-  HMODULE hModule = NULL;
-  if(!GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,  (LPTSTR)&GetDllDirW, &hModule))return false;
-  if(!GetModuleFileNameW(hModule, path, size))return false;
-  PathRemoveFileSpecW(path);
-  return true;
-}
 
 std::string GetDrawPolygonPathA()
 {
@@ -210,17 +160,6 @@ std::wstring GetDrawPolygonPathW()
   return ret+L"\\DrawPolygon.exe";
 }
 
-std::string MyGetTempFilePathA()
-{
-  boost::filesystem::path path = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();
-  return path.string();
-}
-
-std::wstring MyGetTempFilePathW()
-{
-  boost::filesystem::path path = boost::filesystem::temp_directory_path() / boost::filesystem::unique_path();
-  return path.native();
-}
 
 MQPoint MyPointToMQPoint(MyPoint p)
 {
@@ -286,45 +225,6 @@ bool loadPoly(MQObject mqoOut, const wchar_t *path)
   return true;
 }
 
-DWORD RunCmdA(std::string &cmd)
-{
-  STARTUPINFOA si = {0};
-  si.cb = sizeof(si);
-  PROCESS_INFORMATION pi = {0};
-  
-  if(!CreateProcessA(NULL, &cmd[0], NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
-  {
-    return -1;
-  }
-
-  DWORD result=-1;
-  WaitForSingleObject(pi.hProcess, INFINITE);
-  GetExitCodeProcess(pi.hProcess, &result);
-
-  CloseHandle(pi.hProcess);
-  CloseHandle(pi.hThread);
-  return result;
-}
-
-DWORD RunCmdW(std::wstring &cmd)
-{
-  STARTUPINFOW si = {0};
-  si.cb = sizeof(si);
-  PROCESS_INFORMATION pi = {0};
-  
-  if(!CreateProcessW(NULL, &cmd[0], NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
-  {
-    return false;
-  }
-
-  DWORD result=-1;
-  WaitForSingleObject(pi.hProcess, INFINITE);
-  GetExitCodeProcess(pi.hProcess, &result);
-
-  CloseHandle(pi.hProcess);
-  CloseHandle(pi.hThread);
-  return result;
-}
 
 std::string GetOptStrA(DrawPolygonDialog &dlg)
 {
@@ -694,10 +594,10 @@ bool ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   return true;
 }
 
-BOOL DrawPolygon(MQDocument doc)
+BOOL DrawPolygon(MQDocument doc, MQDrawPolygonPlugin *plugin)
 {
   MQWindow mainwin = MQWindow::GetMainWindow();
-  DrawPolygonDialog dlg(mainwin);
+  DrawPolygonDialog dlg(mainwin, plugin);
   dlg.UpdateEnable(doc);
   if(dlg.Execute() != MQDialog::DIALOG_OK){
     return FALSE;
@@ -726,3 +626,10 @@ BOOL DrawPolygon(MQDocument doc)
   return bRet ? TRUE : FALSE;
 }
 
+BOOL MQDrawPolygonPlugin::Execute(int index, MQDocument doc)
+{
+  switch(index){
+  case 0: return DrawPolygon(doc, this);
+  }
+  return FALSE;
+}
