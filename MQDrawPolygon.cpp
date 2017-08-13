@@ -557,7 +557,9 @@ bool ConvertFromTextureFast(MQDocument doc, DrawPolygonDialog &dlg)
   DWORD result = RunCmdA(cmd);
   if(result!=0)
   {
-    OutputDebugStringA("DrawPolygon.exe failed!");
+    OutputDebugStringA("DrawPolygon.exe failed!\n");
+    OutputDebugStringA(cmd.c_str());
+    OutputDebugStringA("\n");
     MQDialog::MessageWarningBox(MQWindow::GetMainWindow(), L"ポリゴン高速変換に失敗", L"Error");
     remove(tripath.c_str());
     remove(dpmvpath.c_str());

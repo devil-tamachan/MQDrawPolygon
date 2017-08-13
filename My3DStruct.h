@@ -247,16 +247,16 @@ public:
       {
         n = 0;
         if(fwrite(&n, 4, 1, fp)!=1)return false;
-        continue;
-      }
-      n = c.size();
-      if(fwrite(&n, 4, 1, fp)!=1)return false;
-      
-      for(int k=0;k<n;k++)
-      {
-        MyCoordinate &uv = c[k];
-        if(fwrite(&(uv.u), sizeof(float), 1, fp)!=1)return false;
-        if(fwrite(&(uv.v), sizeof(float), 1, fp)!=1)return false;
+      } else {
+        n = c.size();
+        if(fwrite(&n, 4, 1, fp)!=1)return false;
+        
+        for(int k=0;k<n;k++)
+        {
+          MyCoordinate &uv = c[k];
+          if(fwrite(&(uv.u), sizeof(float), 1, fp)!=1)return false;
+          if(fwrite(&(uv.v), sizeof(float), 1, fp)!=1)return false;
+        }
       }
       int matid = materials[fi];
       if(fwrite(&matid, 4, 1, fp)!=1)return false;
@@ -321,14 +321,28 @@ public:
       
       unsigned int numCoords = 0;
       if(fread(&numCoords, 4, 1, fp)!=1)return false;
-      if(numVI!=numCoords)return false;
-      
-      for(int k=0;k<numCoords;k++)
+      if(numVI==numCoords)
       {
-        MyCoordinate uv;
-        if(fread(&(uv.u), sizeof(float), 1, fp)!=1)return false;
-        if(fread(&(uv.v), sizeof(float), 1, fp)!=1)return false;
-        c.push_back(uv);
+        for(int k=0;k<numCoords;k++)
+        {
+          MyCoordinate uv;
+          if(fread(&(uv.u), sizeof(float), 1, fp)!=1)return false;
+          if(fread(&(uv.v), sizeof(float), 1, fp)!=1)return false;
+          c.push_back(uv);
+        }
+      } else {
+        for(int k=0;k<numCoords;k++)
+        {
+          MyCoordinate uv;
+          if(fread(&(uv.u), sizeof(float), 1, fp)!=1)return false;
+          if(fread(&(uv.v), sizeof(float), 1, fp)!=1)return false;
+          //c.push_back(uv);ŽÌ‚Ä‚é
+        }
+        for(int k=0;k<numVI;k++)
+        {
+          MyCoordinate uv(0.0f, 0.0f);
+          c.push_back(uv);
+        }
       }
       coords.push_back(c);
       
