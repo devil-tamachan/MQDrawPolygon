@@ -1,7 +1,11 @@
 # MQDrawPolygon
 ラスター画像をポリゴン化。メタセコイア４用プラグイン
 
+## DrawPolygon.exe
+ - CGAL使用部分はDrawPolygon.exeへ分離しました。ソースは https://github.com/devil-tamachan/DrawPolygon
+
 ## 更新履歴
+ - v1.2.1(20170814): デバッグ用コードのせいでエラーになっていたのを修正
  - v1.2 (20170814): 面に貼ったテクスチャ画像からの変換、立体テクスチャ機能追加
  - v1.1 (20170510): 面貼り追加
 
