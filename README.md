@@ -19,6 +19,7 @@
 <img src="https://raw.githubusercontent.com/devil-tamachan/MQDrawPolygon/master/sample/rittai.png" />
 <img src="https://raw.githubusercontent.com/devil-tamachan/MQDrawPolygon/master/sample/furiru2.png" />
 <img src="https://raw.githubusercontent.com/devil-tamachan/MQDrawPolygon/master/sample/pakaan.png" />
+
  - 変換サンプル: sample/spikebelt.mqo, sample/furiru2.mqo
  - テクスチャに模様を書いて面に貼る
  - 変換したい面を選択
